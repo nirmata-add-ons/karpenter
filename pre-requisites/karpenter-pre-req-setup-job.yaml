@@ -1,0 +1,38 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name:  karpenter-pre-req
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name:  karpenter
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: karpenter-pre-req-setup-job
+spec:
+  template:
+    metadata:
+      labels:
+        app: karpenter-setup-job
+    spec:
+      serviceAccountName: karpenter-pre-req
+      containers:
+      - name: karpenter-setup-job
+        image: amazon/aws-cli:latest
+        env:
+          - name: CLUSTER_NAME
+            value: "eks-demo"
+        command:
+          - /bin/sh
+          - -c
+          - |
+            yum install git -y > /dev/null 2>&1
+            git clone https://github.com/nirmata/pre-requisite-karpenter.git
+            cd pre-requisite-karpenter/karpenter-pre-req
+            chmod +x karpenter-preprequisite-script.sh
+            ./karpenter-preprequisite-script.sh $CLUSTER_NAME
+      restartPolicy: Never
